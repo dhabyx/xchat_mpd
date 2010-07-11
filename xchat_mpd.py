@@ -3,7 +3,7 @@
 import socket,re,xchat
 
 __module_name__ = "mpd-np"
-__module_version__ = "0.1"
+__module_version__ = "0.2"
 __module_description__ = "mpd now playing"
 
 host='127.0.0.1'
@@ -18,6 +18,7 @@ def playing(word, word_eol, userdata):
     custom_msg=word_eol[1]+":"
   mpd=socket.socket ( socket.AF_INET, socket.SOCK_STREAM )
   mpd.connect((host,port))
+  welcome=mpd.recv(1024)
   mpd.send('currentsong\r\n')
   #get all the info about current track being played
   data=mpd.recv(4096)
@@ -30,17 +31,18 @@ def playing(word, word_eol, userdata):
   except:
     title=""
   try:
-    album=re.findall(r'Album[:]\s[\S]+',data)[0].split(':')[1]
+    album=re.findall(r'Album[:]\s[\S ]+',data)[0].split(':')[1]
   except:
     album=""
-  if artist == "":
+  #not info from track
+  if not artist:
     try:
-      filename=re.findall(r'file[:]\s[\S ]+',data)[0].split(':')[1]
-      filenamesplit=filename[filename.rindex("/")+1:].split(".")
+      filename=re.findall(r'file[:]\s[\S ]+',data)[0]
+      filename=filename[filename.rindex("/")+1:].split('.')[0]
     except:
-      filenamesplit[0]="some song"
-    msg=custom_msg + init_string + filenamesplit[0] + end_string
-  else
+      filename=""
+    msg=custom_msg + init_string + filename + end_string
+  else:
     msg=custom_msg + init_string + artist+' -' + title + ' -' + album + end_string
   xchat.command('me ' + msg)
   data=""
